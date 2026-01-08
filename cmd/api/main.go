@@ -16,10 +16,15 @@ import (
 	"obpeterapp.com/internal/data"
 	"obpeterapp.com/internal/jsonlog"
 	"obpeterapp.com/internal/mailer"
+	"obpeterapp.com/internal/vcs"
 )
 
 // Application version number
-const version = "1.0.0"
+
+var (
+	// GitCommit holds the git commit hash for the build
+	version = vcs.Version()
+)
 
 // Config struct holds all configuration settings for the application
 type config struct {
