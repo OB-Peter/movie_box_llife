@@ -10,10 +10,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pascaldekloe/jwt"
 	"github.com/tomasen/realip"
 	"golang.org/x/time/rate"
 	"obpeterapp.com/internal/data"
-	"obpeterapp.com/internal/validator"
 )
 
 func (app *application) recoverPanic(next http.Handler) http.Handler {
@@ -110,19 +110,24 @@ func (app *application) authenticate(next http.Handler) http.Handler {
 		// Extract the actual authentication token from the header parts.
 		token := headerParts[1]
 		// Validate the token to make sure it is in a sensible format.
-		v := validator.New()
-		// If the token isn't valid, use the invalidAuthenticationTokenResponse()
-		// helper to send a response, rather than the failedValidationResponse() helper
-		// that we'd normally use.
-		if data.ValidateTokenPlaintext(v, token); !v.Valid() {
+		claims, err := jwt.HMACCheck([]byte(token), []byte(app.config.jwt.secret))
+		if err != nil {
 			app.invalidCredentialsResponse(w, r)
 			return
 		}
-		// Retrieve the details of the user associated with the authentication token,
-		// again calling the invalidCredentialsResponse() helper if no
-		// matching record was found. IMPORTANT: Notice that we are using
-		// ScopeAuthentication as the first parameter here.
-		user, err := app.models.Users.GetForToken(data.ScopeAuthentication, token)
+		// Check that the token hasn't expired yet.
+		if !claims.Valid(time.Now()) {
+			app.invalidCredentialsResponse(w, r)
+			return
+		}
+
+		userID, err := strconv.ParseInt(claims.Subject, 10, 64)
+		if err != nil {
+			app.serverErrorResponse(w, r, err)
+			return
+		}
+
+		user, err := app.models.Users.Get(userID)
 		if err != nil {
 			switch {
 			case errors.Is(err, data.ErrRecordNotFound):
@@ -132,12 +137,9 @@ func (app *application) authenticate(next http.Handler) http.Handler {
 			}
 			return
 		}
-		// Call the contextSetUser() helper to add the user information to the request
-		// context.
 		r = app.contextSetUser(r, user)
-		// Call the next handler in the chain.
 		next.ServeHTTP(w, r)
-	})
+	}) 
 
 }
 

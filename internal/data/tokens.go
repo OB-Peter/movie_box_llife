@@ -16,6 +16,7 @@ import (
 const (
 	ScopeActivation     = "activation"
 	ScopeAuthentication = "authentication"
+	ScopePasswordReset  = "password_reset"
 )
 
 // Define a Token struct to hold the data for an individual token. This includes the
@@ -123,3 +124,4 @@ func (m TokenModel) DeleteAllForUser(scope string, userID int64) error {
 	_, err := m.DB.ExecContext(ctx, query, scope, userID)
 	return err
 }
+
