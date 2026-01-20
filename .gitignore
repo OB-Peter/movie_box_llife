@@ -1,2 +1,20 @@
 .envrc
 bin/
+
+# Secrets and credentials
+.envrc
+.env
+*.pem
+*.key
+*.p12
+
+# Database
+*.db
+*.sqlite
+
+# Vendor (optional - some people commit this)
+/vendor/
+
+ubuntu@54.167.116.69
+root@54.167.116.69
+
